@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { fetchAuditForUi } from "@/lib/audit-client-mirror";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 
@@ -30,11 +31,8 @@ export function AuditFeed({ refreshKey }: { refreshKey: number }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/audit");
-    if (res.ok) {
-      const data = (await res.json()) as { events: AuditEvent[] };
-      setEvents(data.events);
-    }
+    const merged = await fetchAuditForUi(50);
+    setEvents(merged);
     setLoading(false);
   }, []);
 
@@ -46,7 +44,7 @@ export function AuditFeed({ refreshKey }: { refreshKey: number }) {
     <Card className="sticky top-24 h-fit lg:top-28" padding="md">
       <CardHeader
         title="Audit trail"
-        description="Running log of policy decisions and PayPal API actions for this session."
+        description="Policy and PayPal actions for this browser session (kept while the tab is open)."
       />
       <div className="relative">
         {loading && events.length === 0 ? (

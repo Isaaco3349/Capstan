@@ -7,7 +7,9 @@ import { AgGridReact } from "ag-grid-react";
 import { Button } from "./ui/Button";
 import { Card, CardHeader } from "./ui/Card";
 import { EventTypeCell } from "./grid/EventTypeCell";
+import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
+import { fetchAuditForUi } from "@/lib/audit-client-mirror";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -82,12 +84,9 @@ export function AuditGridDashboard() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/audit?limit=200");
-    if (res.ok) {
-      const data = (await res.json()) as { events: RawEvent[] };
-      setRawEvents(data.events);
-      setRows(toRows(data.events));
-    }
+    const events = (await fetchAuditForUi(200)) as RawEvent[];
+    setRawEvents(events);
+    setRows(toRows(events));
     setLoading(false);
   }, []);
 

@@ -20,6 +20,8 @@ export function EventTypeCell(params: CustomCellRendererProps) {
   const raw = String(params.value ?? params.data?.rawType ?? "");
   if (!raw) return null;
   return (
-    <Badge tone={toneForType(raw)}>{labelForType(raw)}</Badge>
+    <span className="flex h-full items-center py-1">
+      <Badge tone={toneForType(raw)}>{labelForType(raw)}</Badge>
+    </span>
   );
 }

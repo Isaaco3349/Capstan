@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { appendAuditMirror } from "@/lib/audit-client-mirror";
 import { Button } from "./ui/Button";
 import { Card, CardHeader } from "./ui/Card";
 
@@ -55,6 +56,18 @@ export function AgentDraftPanel({
       }
       const draft = data.draft as AgentDraft;
       const mode = (data.mode as string) ?? "local";
+      appendAuditMirror({
+        type: "agent.draft",
+        summary:
+          mode === "openai"
+            ? `OpenAI drafted ${draft.payeeLabel} for $${draft.amountUsd}.`
+            : `Local agent parsed payee ${draft.payeeLabel} and amount $${draft.amountUsd} without OpenAI.`,
+        meta: {
+          payee: draft.payeeLabel,
+          amountUsd: draft.amountUsd,
+          mode,
+        },
+      });
       onApplied(draft);
       onAudit();
       setAppliedLine(

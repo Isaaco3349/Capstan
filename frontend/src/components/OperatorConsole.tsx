@@ -12,6 +12,7 @@ import { FieldLabel, Input } from "./ui/Input";
 import { Badge } from "./ui/Badge";
 import { StepProgress, type StepId } from "./ui/StepProgress";
 import { AgentDraftPanel } from "./AgentDraftPanel";
+import { appendAuditMirror } from "@/lib/audit-client-mirror";
 
 type Draft = {
   payeeLabel: string;
@@ -68,6 +69,11 @@ export function OperatorConsole({ clientId }: { clientId: string }) {
     };
     if (!policy.allowed) {
       setPolicyError(policy.reason ?? "Blocked by policy.");
+      appendAuditMirror({
+        type: "policy.blocked",
+        summary: policy.reason ?? "Blocked by policy.",
+        meta: { amountUsd: amount },
+      });
       bumpAudit();
       return;
     }
@@ -357,6 +363,21 @@ export function OperatorConsole({ clientId }: { clientId: string }) {
                     if (!res.ok) {
                       throw new Error(data.error ?? "Create order failed");
                     }
+                    appendAuditMirror({
+                      type: "payment.approved",
+                      summary: `Operator approved ${draft.payeeLabel} for $${amountFormatted}`,
+                      meta: {
+                        payee: draft.payeeLabel,
+                        amountUsd: amountFormatted,
+                        milestone: draft.milestone,
+                        orderId: data.id as string,
+                      },
+                    });
+                    appendAuditMirror({
+                      type: "paypal.order_created",
+                      summary: `PayPal order ${data.id} created (${data.status ?? "CREATED"})`,
+                      meta: { orderId: data.id as string, amountUsd: amountFormatted },
+                    });
                     bumpAudit();
                     return data.id as string;
                   }}
@@ -374,6 +395,16 @@ export function OperatorConsole({ clientId }: { clientId: string }) {
                     if (!res.ok) {
                       throw new Error(captured.error ?? "Capture failed");
                     }
+                    appendAuditMirror({
+                      type: "paypal.captured",
+                      summary: `Captured order ${captured.id} (${captured.status ?? "COMPLETED"})`,
+                      meta: {
+                        orderId: captured.id as string,
+                        captureId: captured.captureId as string | undefined,
+                        amountUsd: amountFormatted,
+                        payee: draft.payeeLabel,
+                      },
+                    });
                     setLastCapture(captured.captureId ?? captured.id);
                     setStep("done");
                     setTimeout(() => bumpAudit(), 100);
