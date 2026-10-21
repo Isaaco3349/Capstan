@@ -1,51 +1,45 @@
-# Architecture (planned)
+# Architecture
 
-Capstan is a **policy-bound payment agent** for small businesses using **PayPal sandbox** in development. AI proposes and prepares money movement; **humans approve** (or auto-execute only within explicit caps). A **live finance cockpit** (AG Studio) shows transactions, anomalies, and agent activity.
+Capstan is a **policy bound payment agent** for teams using **PayPal sandbox**. AI proposes structured payouts; **operators approve**; PayPal Orders execute; **AG Grid** surfaces the audit stream.
 
 ## Principles
 
-1. **PayPal is central** — Orders, Invoicing, Payouts, or Subscriptions (final API set locked in Phase 1); not a chat wrapper around unrelated rails.
-2. **Agentic, not decorative** — LLM tool calls (PayPal REST and/or [PayPal MCP](https://developer.paypal.com/ai-tools/mcp-server)) drive real sandbox actions after policy checks.
-3. **Confirm-first autonomy** — Default: queue → approve → execute. Optional: auto-pay under per-payee and daily caps defined in plain language.
-4. **Auditable** — Every tool call, approval, and PayPal response id logged for judges and operators.
+1. **PayPal is central** — Orders v2 checkout (create + capture) in the demo path.
+2. **Agentic with guardrails** — Draft endpoint plus optional OpenAI; policy engine before any PayPal REST call.
+3. **Confirm first** — Compose → review → checkout; no silent capture.
+4. **Auditable** — Append only event log (file backed) feeding console timeline and dashboard grid.
 
-## Logical components
+## Components
 
 | Layer | Responsibility |
 | --- | --- |
-| **Web app** | Next.js UI: rules, approval queue, audit log, AG Studio embed |
-| **Policy engine** | Parse/store rules (caps, allowlists, blocked actions); evaluate before execute |
-| **Agent service** | LLM + tool schema; drafts actions; never bypasses policy |
-| **PayPal adapter** | Sandbox OAuth, webhooks (or polling), idempotent captures/payouts |
-| **Event stream** | Normalized txn events → AG Studio data source |
-| **Persistence** | SQLite or Postgres (TBD Phase 1); rules, approvals, audit entries |
+| **Next.js UI** | Operator console, marketing landing, AG Grid dashboard |
+| **Policy** | `CAPSTAN_MAX_PAYMENT_USD` cap; blocks emit `policy.blocked` audit events |
+| **Agent** | `/api/agent/draft` — local parser or OpenAI structured JSON |
+| **PayPal adapter** | Server OAuth, create order, capture order; React SDK for buyer UI |
+| **Audit store** | `frontend/.data/audit-events.json` |
+| **MCP (optional)** | `@paypal/mcp` in Cursor; token via `scripts/print-mcp-token.mjs` |
 
-## Planned user flow (demo)
+## User flow
 
-1. Operator describes rules in natural language (e.g. pay contractor up to $500 when milestone marked complete).
-2. Agent interprets → structured policy + suggested PayPal action (invoice, payout, order).
-3. Action appears in **approval queue** with human-readable summary.
-4. Operator approves → PayPal sandbox executes → webhook/poll updates cockpit.
-5. Agent may add cockpit widgets (e.g. refund spike alert) from stream analysis.
+1. Operator describes payment (NL or form).
+2. Agent or manual draft fills payment details.
+3. Policy POST on review transition; block or allow.
+4. Operator approves → PayPal order created → buyer completes sandbox checkout → capture.
+5. Dashboard queries audit API with filters and export.
 
-## Integrations (hackathon)
+## Integrations
 
-| Tool | Role |
+| Tool | Role in Capstan |
 | --- | --- |
-| PayPal Developer Platform | Sandbox payments, webhooks simulator |
-| PayPal AI Toolkit / MCP | Agent tools for PayPal operations |
-| AI model (OpenAI or Anthropic) | Reasoning + tool calling |
-| AG Studio / AG Grid | Merchant dashboard, NL-assisted widgets |
-| Render or Vercel (TBD) | Hosted demo for judges |
+| PayPal Developer Platform | Sandbox Orders, OAuth |
+| `@paypal/react-paypal-js` | Checkout buttons |
+| `@paypal/mcp` | Documented operator sidecar (not in app hot path) |
+| OpenAI (optional) | Richer NL parsing |
+| AG Grid Community | Finance dashboard |
 
-## Out of scope (v1)
+## Out of scope (demo)
 
-- Production PayPal live money
-- Multi-tenant merchant onboarding
-- Custom blockchain or non-PayPal settlement rails
-
-## Security notes
-
-- Secrets only in server environment variables.
-- Destructive PayPal tools (refunds, subscription cancel) require explicit approval in product policy.
-- Sandbox credentials and test buyer/seller logins documented in README for judges only (no real accounts).
+- Live production money
+- Multi tenant merchants
+- Non PayPal rails

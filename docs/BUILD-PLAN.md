@@ -6,8 +6,8 @@ This schedule assumes **~15–21 focused build days** after repo bootstrap, with
 ## Phase 0 — Repo bootstrap (current)
 
 - [x] Project name, LICENSE (MIT), README, architecture sketch
-- [ ] Devpost registration + PayPal sandbox app created
-- [ ] Lock v1 PayPal API surface (recommend: **Invoicing + one capture path** OR **Payouts** for contractor story)
+- [x] PayPal sandbox app + accounts
+- [x] Lock v1 PayPal API surface: **Orders v2 checkout (CAPTURE)**
 
 ## Phase 1 — Foundation (days 1–4)
 

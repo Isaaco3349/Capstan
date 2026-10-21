@@ -1,90 +1,97 @@
 # Capstan
 
-Policy-bound payment agent for PayPal. AI drafts invoices, payouts, and captures; your rules and explicit approvals control when funds move.
+Policy bound payment agent for PayPal. AI drafts contractor payouts from natural language. Policy caps and operator review run before sandbox checkout. Every step is logged and explorable in AG Grid.
 
 | | |
 | --- | --- |
-| **Status** | Early development — application scaffold not yet published |
+| **Status** | Demo ready: agent draft, policy gate, PayPal Orders capture, audit dashboard |
 | **License** | [MIT](./LICENSE) |
-| **Environment** | PayPal Developer sandbox for local and staging work |
+| **Stack** | Next.js, PayPal Sandbox, AG Grid Community, optional OpenAI |
 
-## Overview
+## Why this stands out
 
-Small businesses and agencies often run contractor and vendor payments through PayPal. Delegating the same workflow to an AI assistant without guardrails is unsafe: wrong recipient, wrong amount, or irreversible actions.
+Most hackathon entries stop at “chat pays.” Capstan is built for **operators**:
 
-Capstan sits between operators and PayPal:
+- **Governance first** — Policy blocks overspend before PayPal API calls; approvals are explicit.
+- **Real PayPal** — Orders v2 create and capture in sandbox, not a mock button.
+- **Audit you can ship to finance** — Persistent event log plus AG Grid dashboard (filters, CSV export, row inspector).
+- **AI without a toll booth** — Local parser works with no OpenAI credits; upgrade when you want.
+- **PayPal MCP story** — Same sandbox credentials power `@paypal/mcp` in Cursor for cross checking orders ([docs/PAYPAL-MCP.md](./docs/PAYPAL-MCP.md)).
 
-- **Policies** — express limits and conditions in plain language (spend caps, allowlists, actions that always require approval).
-- **Agent** — prepares the appropriate PayPal operation using server-side AI and PayPal APIs or tooling.
-- **Approval queue** — human review before execution by default.
-- **Audit trail** — record of proposals, decisions, and PayPal outcomes.
-- **Finance cockpit** — live transaction views and analytics (AG Studio / AG Grid).
+Submission copy: [docs/DEVPOST.md](./docs/DEVPOST.md). Live demo script: [docs/JUDGE-DEMO.md](./docs/JUDGE-DEMO.md).
 
-**Initial focus:** agencies and solo operators paying contractors against milestones.
+## What it does
 
-## How it works
+Capstan targets agencies and small teams that pay contractors on PayPal. An agent turns plain language into a structured payment proposal. The operator reviews, policy is checked, then PayPal sandbox checkout captures funds. Nothing executes without human confirmation.
 
-```
-Operator → Rules & approvals UI → Policy engine → Agent (LLM + PayPal tools)
-                                        ↓
-                                PayPal APIs / MCP
-                                        ↓
-                         Event stream → Dashboard + audit log
-```
+## Features
 
-Design details: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
-
-## Capabilities (roadmap)
-
-| Area | Description |
+| Feature | Description |
 | --- | --- |
-| Policy layer | Caps, allowlists, and mandatory approval for high-risk operations |
-| PayPal integration | Sandbox-first; Orders, Invoicing, Payouts, or Subscriptions (surface TBD) |
-| Agent runtime | Tool calling with PayPal [MCP server](https://developer.paypal.com/ai-tools/mcp-server) and/or REST |
-| Operations UI | Queue, history, and configuration |
-| Dashboard | Streaming or polled transaction data with interactive grids and charts |
+| Agent draft | Local parser by default; optional OpenAI when API key is set |
+| AG Grid dashboard | `/app/dashboard` — presets, NL view shortcuts, CSV export, event inspector |
+| Policy | Configurable max single payment (`CAPSTAN_MAX_PAYMENT_USD`, default 500) |
+| Review | Operator confirms before PayPal |
+| PayPal | Orders v2 create and capture in sandbox |
+| Audit | JSON file store under `frontend/.data/` survives dev server restarts |
+| MCP helper | `node scripts/print-mcp-token.mjs` for PayPal MCP in Cursor |
 
-## Stack
+## Sandbox requirements (important)
 
-| Layer | Technology |
-| --- | --- |
-| Application | Next.js (App Router), TypeScript |
-| Payments | PayPal Developer Platform |
-| Agent | OpenAI or Anthropic (server-side only) |
-| Analytics UI | AG Studio / AG Grid |
+PayPal sandbox is picky about account pairing:
 
-## Repository structure
+1. **App credentials** (`PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`) belong to a **US Business** sandbox account linked to your app.
+2. At checkout, log in with a **US Personal (buyer)** sandbox account only. Do not use the Business seller account in the popup.
+3. `.env.local` is for API keys, not for PayPal login.
+4. Nigeria Business plus US buyer often fails with payee restriction errors. Use US Business plus US Personal for demos.
+
+Details: [frontend/README.md](./frontend/README.md).
+
+## Quick start
+
+```bash
+git clone https://github.com/Isaaco3349/Capstan.git
+cd Capstan/frontend
+cp ../.env.example .env.local
+```
+
+Fill in:
+
+- `NEXT_PUBLIC_PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_ID` (same sandbox client id)
+- `PAYPAL_CLIENT_SECRET`
+- `OPENAI_API_KEY` (optional; local agent works without it)
+- `PAYPAL_ENVIRONMENT=sandbox`
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000/app](http://localhost:3000/app) and [http://localhost:3000/app/dashboard](http://localhost:3000/app/dashboard).
+
+## Demo script (2 minutes)
+
+1. **Console:** Natural language → **Draft with AI** → **Continue to review** → PayPal checkout (Personal US buyer).
+2. **Console:** **Try policy block** → continue → see block in audit (never reaches PayPal).
+3. **Dashboard:** **Refresh** → **Captures** / **Policy** → select row → **Event inspector** → **Export CSV**.
+4. **Optional:** PayPal MCP in Cursor per [docs/PAYPAL-MCP.md](./docs/PAYPAL-MCP.md).
+
+## Repository layout
 
 ```
 capstan/
-├── docs/           Architecture and internal build notes
-├── frontend/       Web application (upcoming)
+├── frontend/          Next.js app (run npm commands here)
+├── docs/              DEVPOST, judge demo, MCP, architecture
+├── scripts/           print-mcp-token.mjs
 ├── LICENSE
-├── PROGRESS.md     Development log
-└── .env.example    Environment template (no secrets)
+├── PROGRESS.md
+└── .env.example
 ```
-
-## Getting started
-
-The installable application is not available yet. When the first release lands in `frontend/`:
-
-1. Clone this repository.
-2. Register a [PayPal Developer](https://developer.paypal.com/) application and use **sandbox** credentials.
-3. Copy `.env.example` to `.env.local` and set the documented variables.
-4. Follow the setup instructions in `frontend/README.md`.
-
-Until then, see [docs/BUILD-PLAN.md](./docs/BUILD-PLAN.md) for the implementation roadmap (maintainers).
 
 ## Security
 
-- Never commit `.env`, `.env.local`, or API secrets.
-- Use sandbox credentials and test accounts during development unless explicitly configured otherwise.
-- Refunds, subscription changes, and similar irreversible PayPal actions require explicit approval in the product model.
-
-## Contributing
-
-Issues and pull requests are welcome once the application scaffold is in place. Please open an issue before large changes.
+Never commit `.env.local` or secrets. Use sandbox only unless you explicitly configure live credentials.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).

@@ -38,3 +38,5 @@ coverage/
 .vercel
 .turbo
 *.pem
+frontend/.data/
+.data/

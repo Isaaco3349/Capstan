@@ -1,36 +1,33 @@
-# Capstan — progress log
-
-PayPal AI Hackathon build log. Submission deadline: **Nov 12, 2026 @ 12:00pm PT**.
-
-## Working titles (archived)
-
-- Ledger Agent  
-- PayPilot  
-
-**Chosen name:** **Capstan** — policy-bound payment agent (see README).
+# Capstan progress log
 
 ## Done
 
-- Phase 0: Repository bootstrap (README, LICENSE, `.env.example`, docs).
+- Phase 1: PayPal Orders sandbox checkout, policy cap, review flow, operator UI.
+- Sandbox pairing documented: US Business app plus US Personal buyer.
+- Audit log persisted to `frontend/.data/audit-events.json`.
+- Phase 2: Agent draft panel with local parser (no OpenAI cost) plus optional OpenAI.
+- AG Grid dashboard: presets, NL shortcuts, CSV export, stats, event inspector, badge renderers.
+- Submission pack: `docs/DEVPOST.md`, `docs/JUDGE-DEMO.md`, `docs/PAYPAL-MCP.md`, MCP token script.
+- Console: **Try policy block** for repeatable demo of governance.
 
-## In progress
+## Before submit
 
-- Phase 0: PayPal sandbox app + Devpost team registration.
+- Public GitHub repo with MIT visible in About.
+- Devpost: paste from `docs/DEVPOST.md`, attach video under 3 min.
+- Optional: Vercel deploy for demo URL.
 
-## Blocked
+## Optional later
 
-- _(none)_
+- AG Studio widgets.
+- Webhooks instead of poll refresh.
+- Payee allowlists in policy engine.
 
 ## Decisions
 
 | Date | Decision |
 | --- | --- |
-| 2026-10-05 | Product name **Capstan**; separate repo from Noma (Monad corridor). |
-| 2026-10-05 | Hackathon focus: Grand prizes first; AG Studio for dashboard + sponsor alignment. |
-| 2026-10-05 | v1 persona: small business / agency paying contractors via PayPal. |
-
-## Open questions
-
-- Primary PayPal API for v1: Invoicing vs Payouts vs Orders (lock in Phase 1).
-- AG Studio license/dev key requirements (`TODO(verify)` with AG Grid docs).
-- Hosted demo: Render vs Vercel (`TODO(verify)` team preference).
+| 2026-10-05 | Product name Capstan; Merchant PayPal app. |
+| 2026-10-21 | US sandbox Business plus US Personal for reliable checkout. |
+| 2026-10-21 | File based audit for demo reliability. |
+| 2026-10-21 | Local parser default; OpenAI optional. |
+| 2026-10-21 | MCP documented as judge tooling, not duplicate checkout path. |
