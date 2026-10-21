@@ -35,7 +35,21 @@ export function AgentDraftPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: { error?: string; draft?: AgentDraft; mode?: string } = {};
+      if (text) {
+        try {
+          data = JSON.parse(text) as typeof data;
+        } catch {
+          throw new Error(
+            res.ok
+              ? "Server returned invalid JSON."
+              : `Server error (${res.status}). Check Vercel function logs.`,
+          );
+        }
+      } else if (!res.ok) {
+        throw new Error(`Server error (${res.status}). Check Vercel function logs.`);
+      }
       if (!res.ok) {
         throw new Error(data.error ?? "Draft failed");
       }

@@ -33,7 +33,11 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Agent draft failed";
-    await appendAudit({ type: "paypal.error", summary: `Agent: ${message}` });
+    try {
+      await appendAudit({ type: "paypal.error", summary: `Agent: ${message}` });
+    } catch {
+      // Still return JSON if audit storage fails (e.g. misconfigured path).
+    }
     return Response.json({ error: message }, { status: 500 });
   }
 }
