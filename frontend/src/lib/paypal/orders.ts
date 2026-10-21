@@ -54,6 +54,7 @@ export async function capturePayPalOrder(orderId: string): Promise<{
   id: string;
   status: string;
   captureId?: string;
+  amountUsd?: string;
 }> {
   const token = await getPayPalAccessToken();
   const base = getPayPalApiBase();
@@ -73,12 +74,20 @@ export async function capturePayPalOrder(orderId: string): Promise<{
     );
   }
 
-  const captureId =
-    data.purchase_units?.[0]?.payments?.captures?.[0]?.id ?? undefined;
+  const capture = data.purchase_units?.[0]?.payments?.captures?.[0] as
+    | { id?: string; amount?: { value?: string } }
+    | undefined;
+  const captureId = capture?.id;
+  const amountRaw = capture?.amount?.value;
+  const amountUsd =
+    amountRaw != null && Number.isFinite(Number.parseFloat(amountRaw))
+      ? Number.parseFloat(amountRaw).toFixed(2)
+      : undefined;
 
   return {
     id: data.id as string,
     status: data.status as string,
     captureId,
+    amountUsd,
   };
 }

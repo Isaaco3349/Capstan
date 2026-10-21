@@ -364,7 +364,11 @@ export function OperatorConsole({ clientId }: { clientId: string }) {
                     const res = await fetch("/api/paypal/capture-order", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ orderId: data.orderID }),
+                      body: JSON.stringify({
+                        orderId: data.orderID,
+                        amountUsd: amountFormatted,
+                        payeeLabel: draft.payeeLabel,
+                      }),
                     });
                     const captured = await res.json();
                     if (!res.ok) {

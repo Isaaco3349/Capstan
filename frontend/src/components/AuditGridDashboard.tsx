@@ -7,7 +7,6 @@ import { AgGridReact } from "ag-grid-react";
 import { Button } from "./ui/Button";
 import { Card, CardHeader } from "./ui/Card";
 import { EventTypeCell } from "./grid/EventTypeCell";
-import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -36,18 +35,34 @@ type AuditRow = {
 type ViewPreset = "all" | "captures" | "policy" | "agent";
 
 function toRows(events: RawEvent[]): AuditRow[] {
-  return events.map((e) => ({
-    id: e.id,
-    at: e.at,
-    time: new Date(e.at).toLocaleString(),
-    rawType: e.type,
-    type: e.type.replace(/\./g, " "),
-    summary: e.summary,
-    amountUsd: e.meta?.amountUsd != null ? String(e.meta.amountUsd) : "",
-    payee: e.meta?.payee != null ? String(e.meta.payee) : "",
-    orderId: e.meta?.orderId != null ? String(e.meta.orderId) : "",
-    captureId: e.meta?.captureId != null ? String(e.meta.captureId) : "",
-  }));
+  const amountByOrder = new Map<string, string>();
+  for (const e of events) {
+    const orderId = e.meta?.orderId != null ? String(e.meta.orderId) : "";
+    if (orderId && e.meta?.amountUsd != null) {
+      amountByOrder.set(orderId, String(e.meta.amountUsd));
+    }
+  }
+
+  return events.map((e) => {
+    const orderId = e.meta?.orderId != null ? String(e.meta.orderId) : "";
+    let amountUsd =
+      e.meta?.amountUsd != null ? String(e.meta.amountUsd) : "";
+    if (!amountUsd && orderId && e.type === "paypal.captured") {
+      amountUsd = amountByOrder.get(orderId) ?? "";
+    }
+    return {
+      id: e.id,
+      at: e.at,
+      time: new Date(e.at).toLocaleString(),
+      rawType: e.type,
+      type: e.type.replace(/\./g, " "),
+      summary: e.summary,
+      amountUsd,
+      payee: e.meta?.payee != null ? String(e.meta.payee) : "",
+      orderId,
+      captureId: e.meta?.captureId != null ? String(e.meta.captureId) : "",
+    };
+  });
 }
 
 function formatMeta(meta: RawEvent["meta"]): string {
@@ -84,8 +99,17 @@ export function AuditGridDashboard() {
     const captured = rawEvents.filter((e) => e.type === "paypal.captured");
     const blocked = rawEvents.filter((e) => e.type === "policy.blocked");
     const agent = rawEvents.filter((e) => e.type === "agent.draft");
+    const amountByOrder = new Map<string, number>();
+    for (const e of rawEvents) {
+      const orderId = e.meta?.orderId != null ? String(e.meta.orderId) : "";
+      const amt = Number(e.meta?.amountUsd);
+      if (orderId && Number.isFinite(amt)) amountByOrder.set(orderId, amt);
+    }
     const volume = captured.reduce((sum, e) => {
-      const n = Number(e.meta?.amountUsd);
+      let n = Number(e.meta?.amountUsd);
+      if (!Number.isFinite(n) && e.meta?.orderId) {
+        n = amountByOrder.get(String(e.meta.orderId)) ?? NaN;
+      }
       return sum + (Number.isFinite(n) ? n : 0);
     }, 0);
     return {
@@ -298,6 +322,7 @@ export function AuditGridDashboard() {
         >
           <AgGridReact<AuditRow>
             ref={gridRef}
+            theme="legacy"
             rowData={rows}
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}

@@ -3,7 +3,11 @@ import { capturePayPalOrder } from "@/lib/paypal/orders";
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as { orderId?: string };
+    const body = (await req.json()) as {
+      orderId?: string;
+      amountUsd?: string;
+      payeeLabel?: string;
+    };
     const orderId = body.orderId?.trim();
     if (!orderId) {
       return Response.json({ error: "orderId required" }, { status: 400 });
@@ -11,12 +15,20 @@ export async function POST(req: Request) {
 
     const result = await capturePayPalOrder(orderId);
 
+    const amountUsd =
+      result.amountUsd ??
+      (body.amountUsd?.trim()
+        ? Number.parseFloat(body.amountUsd).toFixed(2)
+        : undefined);
+
     await appendAudit({
       type: "paypal.captured",
       summary: `Captured order ${result.id} (${result.status})`,
       meta: {
         orderId: result.id,
         captureId: result.captureId,
+        amountUsd,
+        payee: body.payeeLabel?.trim(),
       },
     });
 
